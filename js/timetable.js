@@ -166,4 +166,4 @@ function updateSummary(stats, dailyHours, examDates) {
   } else {
       document.getElementById("dateRange").textContent = "No study days required";
   }
-}
+} 
