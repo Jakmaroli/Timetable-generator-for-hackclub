@@ -2,39 +2,35 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudyPlan AI</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <!-- HERO SECTION -->
   <header class="hero">
+    <div class="top-brand">
+      <p class="brand-name">StudyPlan AI</p>
+      <p class="brand-tagline">Smart timetable generator</p>
+      <span class="ai-pill">AI-Powered Study Planning</span>
+    </div>
 
-  <!-- Top-left branding -->
-  <div class="top-brand">
-    <p class="brand-name">StudyPlan AI</p>
-    <p class="brand-tagline">Smart timetable generator</p>
-    <span class="ai-pill">AI-Powered Study Planning</span>
-  </div>
-
-  <!-- Main heading -->
-   <div class="hero-content">
-     <h1 class="hero-title">
-       Ace Your Exams with a <br />
-       <span class="hero-highlight">Personalized Timetable</span>
-     </h1>
-
-     <p class="hero-description">
-      Add your subjects, set your exam dates, and let our AI create the perfect
-      study schedule tailored to your needs.
-     </p>
-   </div>
-
+    <div class="hero-content">
+      <h1 class="hero-title">
+        Ace Your Exams with a <br />
+        <span class="hero-highlight">Personalized Timetable</span>
+      </h1>
+      <p class="hero-description">
+        Add your subjects, set your exam dates, and let our AI create the perfect
+        study schedule tailored to your needs.
+      </p>
+    </div>
   </header>
 
- <!-- SUBJECT FORM -->
+  <main class="container">
+
     <section class="card">
-      <h3>Your Subject</h3>
+      <h3>1. Add Your Subjects</h3>
 
       <label>Subject Name</label>
       <input id="subjectName" placeholder="e.g. Mathematics" />
@@ -45,73 +41,68 @@
       <label>Difficulty</label>
       <select id="difficulty">
         <option value="easy">Easy</option>
-        <option value="medium">Medium</option>
+        <option value="medium" selected>Medium</option>
         <option value="hard">Hard</option>
       </select>
 
       <button onclick="addSubject()">+ Add Subject</button>
-        <p class="hint">
-  You can add multiple subjects. Add at least one subject to generate your timetable.
-</p>
-
-
+      
       <p class="hint">Add at least one subject to generate your timetable.</p>
-
       <ul id="subjectList"></ul>
+      <p id="subjectCount" style="margin-top:10px; color:#64748b; font-size:14px;"></p>
     </section>
-      <p id="subjectCount"></p>
 
-    <!-- STUDY HOURS -->
     <section class="card">
-      <h3>Daily Study Hours</h3>
-      <input type="range" min="1" max="10" value="4" id="hoursRange" />
-      <p><strong><span id="hoursValue">4</span> hours/day</strong></p>
+      <h3>2. Daily Routine</h3>
+      
+      <label>Start Studying At</label>
+      <input type="time" id="startTime" value="09:00">
+
+      <div style="margin-top: 20px;">
+        <label>Daily Study Hours</label>
+        <input type="range" min="1" max="10" value="4" id="hoursRange" />
+        <p><strong><span id="hoursValue">4</span> hours/day</strong></p>
+      </div>
     </section>
 
     <button class="generate-btn" onclick="generate()">
       Generate My Timetable
     </button>
-    <section id="finalTimetable" class="hidden">
 
-  <!-- SUMMARY -->
-  <div class="card timetable-summary">
-    <h3>Your Study Timetable</h3>
-    <p id="dateRange" class="date-range"></p>
-
-    <div class="stats">
-      <div><strong id="studyDays">0</strong><span>Study Days</span></div>
-      <div><strong id="dailyHoursStat">0h</strong><span>Daily Hours</span></div>
-      <div><strong id="totalSessions">0</strong><span>Total Sessions</span></div>
-      <div><strong id="breakTime">0m</strong><span>Break Time</span></div>
-    </div>
-  </div>
-
-  <!-- TIPS -->
-  <div class="card">
-    <h3>Study Tips</h3>
-    <ul class="tips">
-      <li>Start each session by reviewing notes from the previous session.</li>
-      <li>Use the Pomodoro technique: 45 min focused study, then a 15 min break.</li>
-    </ul>
-  </div>
-
-  <!-- SCHEDULE -->
-  <div class="card">
-    <h3>Your Study Schedule</h3>
-    <div id="scheduleDays"></div>
-  </div>
-
-</section>
-
-
-    <!-- LOADING -->
     <div id="loading" class="hidden loading">
       <div class="loader"></div>
       <p>Generating your smart study plan...</p>
     </div>
 
-    <!-- TIMETABLE -->
-    <section id="timetable"></section>
+    <section id="finalTimetable" class="hidden">
+      
+      <div class="card timetable-summary">
+        <h3>Your Study Timetable</h3>
+        <p id="dateRange" class="date-range"></p>
+
+        <div class="stats">
+          <div><strong id="studyDays">0</strong><span>Study Days</span></div>
+          <div><strong id="dailyHoursStat">0h</strong><span>Daily Hours</span></div>
+          <div><strong id="totalSessions">0</strong><span>Total Sessions</span></div>
+          <div><strong id="breakTime">0m</strong><span>Break Time</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Study Tips</h3>
+        <ul class="tips">
+          <li>Start each session by reviewing notes from the previous session.</li>
+          <li>Use the Pomodoro technique: 45 min focused study, then a 15 min break.</li>
+          <li>Prioritize subjects with upcoming exams (our AI has already sorted them for you!).</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Your Study Schedule</h3>
+        <div id="scheduleDays"></div>
+      </div>
+
+    </section>
 
   </main>
 
@@ -120,10 +111,11 @@
   </footer>
 
   <script src="js/state.js"></script>
-<script src="js/utils.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/timetable.js"></script>
-<script src="js/main.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/timetable.js"></script>
+  <script src="js/main.js"></script>
 
 </body>
 </html>
+
