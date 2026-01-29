@@ -13,12 +13,3 @@ StudyPlan AI is a web-based application that helps students generate a personali
 
 *Responsive UI:* Clean, modern interface that works on desktop and mobile.
 
-/
-├── index.html        # Main user interface
-├── style.css         # Modern styling (CSS variables, Flexbox/Grid)
-└── js/
-    ├── main.js       # Event listeners & input handling
-    ├── state.js      # Global state & configuration constants
-    ├── timetable.js  # The Core Logic & AI Algorithm
-    ├── ui.js         # DOM manipulation & rendering functions
-    └── utils.js      # Helper functions (Date formatting, etc.)
