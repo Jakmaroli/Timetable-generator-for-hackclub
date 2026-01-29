@@ -30,7 +30,20 @@
   <main class="container">
 
     <section class="card">
-      <h3>1. Add Your Subjects</h3>
+      <h3>1. Daily Routine</h3>
+      
+      <label>Start Studying At</label>
+      <input type="time" id="startTime" value="09:00">
+
+      <div style="margin-top: 20px;">
+        <label>Daily Study Hours</label>
+        <input type="range" min="1" max="10" value="4" id="hoursRange" />
+        <p><strong><span id="hoursValue">4</span> hours/day</strong></p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>2. Add Your Subjects</h3>
 
       <label>Subject Name</label>
       <input id="subjectName" placeholder="e.g. Mathematics" />
@@ -45,27 +58,14 @@
         <option value="hard">Hard</option>
       </select>
 
-      <button onclick="addSubject()">+ Add Subject</button>
+      <button id="addSubjectBtn">+ Add Subject</button>
       
       <p class="hint">Add at least one subject to generate your timetable.</p>
       <ul id="subjectList"></ul>
       <p id="subjectCount" style="margin-top:10px; color:#64748b; font-size:14px;"></p>
     </section>
 
-    <section class="card">
-      <h3>2. Daily Routine</h3>
-      
-      <label>Start Studying At</label>
-      <input type="time" id="startTime" value="09:00">
-
-      <div style="margin-top: 20px;">
-        <label>Daily Study Hours</label>
-        <input type="range" min="1" max="10" value="4" id="hoursRange" />
-        <p><strong><span id="hoursValue">4</span> hours/day</strong></p>
-      </div>
-    </section>
-
-    <button class="generate-btn" onclick="generate()">
+    <button class="generate-btn" id="generateBtn">
       Generate My Timetable
     </button>
 
@@ -85,6 +85,20 @@
           <div><strong id="dailyHoursStat">0h</strong><span>Daily Hours</span></div>
           <div><strong id="totalSessions">0</strong><span>Total Sessions</span></div>
           <div><strong id="breakTime">0m</strong><span>Break Time</span></div>
+        </div>
+      </div>
+
+      <div class="card" style="border-left: 5px solid #6366f1;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h3 style="margin:0">Save to Your Phone</h3>
+            <p style="margin:5px 0 0; font-size:14px; color:#64748b;">
+              Export your AI plan to Google Calendar, Outlook, or Apple Calendar.
+            </p>
+          </div>
+          <button id="downloadBtn" style="background:#0f172a; margin:0;">
+            📅 Download .ics
+          </button>
         </div>
       </div>
 
@@ -110,12 +124,11 @@
     Built with ❤️ for students everywhere
   </footer>
 
-  <script src="js/state.js"></script>
   <script src="js/utils.js"></script>
+  <script src="js/state.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/timetable.js"></script>
   <script src="js/main.js"></script>
 
 </body>
 </html>
-

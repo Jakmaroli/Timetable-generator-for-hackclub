@@ -1,9 +1,41 @@
-// App state
-let subjects = [];
+const State = {
+  data: {
+    subjects: [],
+    generatedEvents: [],
+    settings: {
+      studyMinutes: 45,
+      breakMinutes: 15,
+      startTimeMinutes: 9 * 60, // Default 09:00
+      dailyHours: 4
+    }
+  },
 
-// Constants
-const STUDY_MINUTES = 45;
-const BREAK_MINUTES = 15;
+  addSubject(subject) {
+    this.data.subjects.push(subject);
+  },
 
-// Mutable Settings (Changed from const to let)
-let START_TIME_MINUTES = 9 * 60; // Default 09:00
+  getSubjects() {
+    return this.data.subjects;
+  },
+
+  updateSettings(timeString, hours) {
+    if (timeString) {
+      const [h, m] = timeString.split(":").map(Number);
+      this.data.settings.startTimeMinutes = (h * 60) + m;
+    }
+    this.data.settings.dailyHours = hours;
+  },
+
+  getSettings() {
+    return this.data.settings;
+  },
+
+  // Event storage for ICS export
+  setGeneratedEvents(events) {
+    this.data.generatedEvents = events;
+  },
+
+  getGeneratedEvents() {
+    return this.data.generatedEvents;
+  }
+};

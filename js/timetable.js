@@ -1,169 +1,142 @@
-function generateTimetable() {
-  if (subjects.length === 0) {
-    alert("Add at least one subject!");
-    return;
-  }
+const Timetable = {
+  generate() {
+    const subjects = State.getSubjects();
+    const settings = State.getSettings();
+    const container = document.getElementById("scheduleDays"); // Keeping direct access for performance or use UI helper
 
-  showLoading(true);
-  document.getElementById("scheduleDays").innerHTML = "";
+    UI.clearTimetable();
+    UI.showTimetable();
 
-  setTimeout(() => {
-    showLoading(false);
-    buildFinalTimetable();
-  }, 1200);
-}
+    // Reset export events
+    const newEvents = []; 
 
-function getSubjectWeight(difficulty) {
-  switch (difficulty) {
-    case 'hard': return 3;
-    case 'medium': return 2;
-    case 'easy': return 1;
-    default: return 2;
-  }
-}
-
-function buildFinalTimetable() {
-  const container = document.getElementById("scheduleDays");
-  showTimetable();
-
-  const dailyHours = Number(hoursRange.value);
-  // Calculate how many full study blocks fit in the day
-  const sessionsPerDay = Math.floor((dailyHours * 60) / (STUDY_MINUTES + (BREAK_MINUTES / 2)));
-
-  let stats = { days: 0, sessions: 0, breaks: 0 };
-  const today = normalizeDate(new Date());
-  
-  // Find the last exam date
-  const examDates = subjects.map(s => normalizeDate(s.examDate));
-  const lastStudyDay = new Date(Math.max(...examDates));
-  lastStudyDay.setDate(lastStudyDay.getDate() - 1); // Study until the day before the last exam
-
-  let poolIndex = 0;
-
-  // Loop through every day from Today to Last Exam
-  for (let day = new Date(today); day <= lastStudyDay; day.setDate(day.getDate() + 1)) {
+    // Calculation constants
+    const sessionsPerDay = Math.floor((settings.dailyHours * 60) / (settings.studyMinutes + (settings.breakMinutes / 2)));
+    let stats = { days: 0, sessions: 0, breaks: 0 };
     
-    // 1. Filter: Only subjects that have not had their exam yet
-    let activeSubjects = subjects.filter(s => normalizeDate(s.examDate) > day);
-    
-    if (activeSubjects.length === 0) continue;
+    // Date Setup
+    const today = Utils.normalizeDate(new Date());
+    const examDates = subjects.map(s => Utils.normalizeDate(s.examDate));
+    const lastStudyDay = new Date(Math.max(...examDates));
+    lastStudyDay.setDate(lastStudyDay.getDate() - 1);
 
-    // 2. AI ALGORITHM: Urgency Sort
-    // Sort subjects by priority: Closer Date + Higher Difficulty = Higher Priority
-    activeSubjects.sort((a, b) => {
-      // Days remaining
-      const daysA = (normalizeDate(a.examDate) - day) / (1000 * 60 * 60 * 24);
-      const daysB = (normalizeDate(b.examDate) - day) / (1000 * 60 * 60 * 24);
+    let poolIndex = 0;
+
+    // --- MAIN LOOP ---
+    for (let day = new Date(today); day <= lastStudyDay; day.setDate(day.getDate() + 1)) {
       
-      // Calculate Score: (Difficulty Weight * 10) - Days Remaining
-      // This means a 'Hard' subject (30 pts) with 5 days left = 25 score
-      // An 'Easy' subject (10 pts) with 2 days left = 8 score
-      const scoreA = (getSubjectWeight(a.difficulty) * 10) - daysA;
-      const scoreB = (getSubjectWeight(b.difficulty) * 10) - daysB;
+      // Filter subjects with exams AFTER current day
+      let activeSubjects = subjects.filter(s => Utils.normalizeDate(s.examDate) > day);
+      if (activeSubjects.length === 0) continue;
+
+      // AI Logic: Sort by Urgency
+      activeSubjects.sort((a, b) => {
+        const daysA = (Utils.normalizeDate(a.examDate) - day) / (1000 * 60 * 60 * 24);
+        const daysB = (Utils.normalizeDate(b.examDate) - day) / (1000 * 60 * 60 * 24);
+        const scoreA = (this.getWeight(a.difficulty) * 10) - daysA;
+        const scoreB = (this.getWeight(b.difficulty) * 10) - daysB;
+        return scoreB - scoreA;
+      });
+
+      // Create Day Pool
+      let dayPool = this.createPool(activeSubjects);
+
+      // Render Day & Collect Events
+      const dayEvents = this.renderDay(dayPool, new Date(day), sessionsPerDay, poolIndex, settings);
+      newEvents.push(...dayEvents);
       
-      return scoreB - scoreA; // Descending sort (Highest score first)
+      poolIndex = (poolIndex + 1) % dayPool.length;
+
+      // Update Stats
+      stats.days++;
+      stats.sessions += sessionsPerDay;
+      stats.breaks += (sessionsPerDay - 1) * settings.breakMinutes;
+    }
+
+    State.setGeneratedEvents(newEvents);
+    
+    // Final Summary Update
+    const earliest = new Date(Math.min(...examDates));
+    const latest = new Date(Math.max(...examDates));
+    const dateRangeStr = stats.days > 0 
+      ? `${earliest.toDateString().slice(4, 10)} - ${latest.toDateString().slice(4, 10)}, ${latest.getFullYear()}`
+      : "No study days required";
+
+    UI.updateSummary({
+      ...stats,
+      dailyHours: settings.dailyHours,
+      dateRange: dateRangeStr
     });
+  },
 
-    // 3. Create a weighted pool for the day based on the sorted list
-    // We take the top 3 most urgent subjects and rotate them
-    let dayPool = [];
-    if (activeSubjects.length === 1) {
-      dayPool = [activeSubjects[0]];
-    } else if (activeSubjects.length === 2) {
-      dayPool = [activeSubjects[0], activeSubjects[1], activeSubjects[0]]; // Bias to #1
-    } else {
-      // Mix the top 3, but give #1 two slots
-      dayPool = [activeSubjects[0], activeSubjects[1], activeSubjects[0], activeSubjects[2]];
+  getWeight(difficulty) {
+    switch (difficulty) {
+      case 'hard': return 3;
+      case 'medium': return 2;
+      case 'easy': return 1;
+      default: return 2;
     }
+  },
 
-    // Render the day
-    createDayScheduleMulti(dayPool, day, sessionsPerDay, container, poolIndex);
+  createPool(subjects) {
+    if (subjects.length === 1) return [subjects[0]];
+    if (subjects.length === 2) return [subjects[0], subjects[1], subjects[0]];
+    return [subjects[0], subjects[1], subjects[0], subjects[2]];
+  },
+
+  renderDay(pool, date, sessionCount, startIndex, settings) {
+    const dayBlock = document.createElement("div");
+    dayBlock.className = "day";
     
-    // Rotate index slightly to prevent monotony
-    poolIndex = (poolIndex + 1) % dayPool.length;
+    const header = document.createElement("div");
+    header.className = "day-header";
+    header.textContent = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    dayBlock.appendChild(header);
 
-    stats.days++;
-    stats.sessions += sessionsPerDay;
-    stats.breaks += (sessionsPerDay - 1) * BREAK_MINUTES;
-  }
+    let currentMinutes = settings.startTimeMinutes;
+    let dayEvents = [];
 
-  updateSummary(stats, dailyHours, examDates);
-}
+    for (let i = 0; i < sessionCount; i++) {
+      const subject = pool[(startIndex + i) % pool.length];
+      
+      // Render Session
+      dayBlock.appendChild(this.createSessionHTML(subject.name, currentMinutes));
+      
+      // Store Event Data
+      const startObj = new Date(date);
+      startObj.setHours(Math.floor(currentMinutes/60), currentMinutes%60);
+      
+      const endMinutes = currentMinutes + settings.studyMinutes;
+      const endObj = new Date(date);
+      endObj.setHours(Math.floor(endMinutes/60), endMinutes%60);
 
-// --- MISSING FUNCTION ADDED HERE ---
-function createDayScheduleMulti(activePool, dayDate, sessionsPerDay, container, startIndex) {
-  const dayBlock = document.createElement("div");
-  dayBlock.className = "day";
+      dayEvents.push({ subject: subject.name, start: startObj, end: endObj });
 
-  // Header: "Mon, Oct 12"
-  const dateTitle = document.createElement("div");
-  dateTitle.className = "day-header";
-  dateTitle.textContent = dayDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  dayBlock.appendChild(dateTitle);
+      currentMinutes += settings.studyMinutes;
 
-  // Use the global start time set by the user
-  let currentMinutes = START_TIME_MINUTES;
-
-  for (let i = 0; i < sessionsPerDay; i++) {
-    // Pick subject from pool
-    const subject = activePool[(startIndex + i) % activePool.length];
-
-    // Add Session
-    dayBlock.appendChild(createSession(subject.name, currentMinutes));
-    currentMinutes += STUDY_MINUTES;
-
-    // Add Break (if not the last session)
-    if (i < sessionsPerDay - 1) {
-      dayBlock.appendChild(createBreak(currentMinutes));
-      currentMinutes += BREAK_MINUTES;
+      // Render Break
+      if (i < sessionCount - 1) {
+        dayBlock.appendChild(this.createBreakHTML(currentMinutes));
+        currentMinutes += settings.breakMinutes;
+      }
     }
+
+    UI.addDayBlock(dayBlock);
+    return dayEvents;
+  },
+
+  createSessionHTML(title, start) {
+    const div = document.createElement("div");
+    div.className = "session";
+    div.style.borderLeft = "4px solid #6366f1"; 
+    div.innerHTML = `<span>${title}</span><span>45 min</span><span>${Utils.formatTime(start)}</span>`;
+    return div;
+  },
+
+  createBreakHTML(start) {
+    const div = document.createElement("div");
+    div.className = "session break";
+    div.innerHTML = `<span>Break</span><span>15 min</span><span>${Utils.formatTime(start)}</span>`;
+    return div;
   }
-
-  container.appendChild(dayBlock);
-}
-
-function createSession(title, start) {
-  const div = document.createElement("div");
-  div.className = "session";
-  // Determine color border based on subject name (simple hash)
-  div.style.borderLeft = "4px solid #6366f1"; 
-  
-  div.innerHTML = `
-    <span>${title}</span>
-    <span>45 min</span>
-    <span>${formatTime(start)}</span>
-  `;
-  return div;
-}
-
-function createBreak(start) {
-  const div = document.createElement("div");
-  div.className = "session break";
-  div.innerHTML = `
-    <span>Break</span>
-    <span>15 min</span>
-    <span>${formatTime(start)}</span>
-  `;
-  return div;
-}
-
-function updateSummary(stats, dailyHours, examDates) {
-  document.getElementById("studyDays").textContent = stats.days;
-  document.getElementById("dailyHoursStat").textContent = dailyHours + "h";
-  document.getElementById("totalSessions").textContent = stats.sessions;
-  document.getElementById("breakTime").textContent = stats.breaks + "m";
-
-  const earliest = new Date(Math.min(...examDates));
-  const latest = new Date(Math.max(...examDates));
-
-  if (stats.days > 0) {
-      document.getElementById("dateRange").textContent =
-        earliest.toDateString().slice(4, 10) +
-        " - " +
-        latest.toDateString().slice(4, 10) +
-        ", " +
-        latest.getFullYear();
-  } else {
-      document.getElementById("dateRange").textContent = "No study days required";
-  }
-} 
+};
